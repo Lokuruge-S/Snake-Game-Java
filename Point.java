@@ -22,4 +22,18 @@ public class Point {
     public void setY(int ycoord) {
         this.ycoord = ycoord;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Point)) {
+            return false;
+        }
+        Point point = (Point) o;
+        if (this.getX() == point.getX() && this.getY() == point.getY()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 }
