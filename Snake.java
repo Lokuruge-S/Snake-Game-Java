@@ -15,6 +15,7 @@ public class Snake {
     private ArrayList<Integer> turnDirections = new ArrayList<Integer>();
     private boolean snakeMade;
     private boolean bitesBody = false;
+    private boolean bitesBoard = false;
 
     public Snake (String[][] board, Point head, int direction, int length) {
         this.board = board;
@@ -148,9 +149,9 @@ public class Snake {
         }
     }
 
-    public void addTurnPoint() {
+    public void addTurnPoint(Point head, int turnDir) {
         turnPoints.add(new Point(head.getX(), head.getY()));
-        turnDirections.add(this.direction);
+        turnDirections.add(turnDir);
     }
 
     private void bendSnake(Point currentSeg, int currentDir, int segIndex) {
@@ -250,5 +251,37 @@ public class Snake {
 
     public boolean willBiteBody() {
         return this.bitesBody;
+    }
+
+    public boolean willBiteBoard() {
+        bitesBoard = false;
+
+        switch (direction) {
+            case Snake.NORTH:
+                if ((head.getY() - 1) < 0) {
+                    bitesBoard = true;
+                };
+                break;
+            
+            case Snake.EAST:
+                if ((head.getX() + 1) >= board[0].length) {
+                    bitesBoard = true;
+                };
+                break;
+
+            case Snake.SOUTH:
+                if ((head.getY() + 1) >= board.length) {
+                    bitesBoard = true;
+                };
+                break;
+
+            case Snake.WEST:
+                if ((head.getX() - 1) < 0) {
+                    bitesBoard = true;
+                }
+                break;
+        }
+
+        return this.bitesBoard;
     }
 }
