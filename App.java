@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.*;
 import java.awt.*;
@@ -6,13 +5,15 @@ import java.awt.event.KeyEvent;
 import java.awt.event.ActionEvent;
 
 public class App {
-
+    
+    static boolean turnPointAdded = true;
     public static void main (String[] args) {
         Random rnd = new Random(27);
 
         final int BOARD_SIZE = 20;
         final int GENERATION_OFFSET = 4;
         String[][] board = new String[BOARD_SIZE][BOARD_SIZE];
+        TurningPoint turnPoint = new TurningPoint(0, 0, Snake.NORTH);
 
         for (int i = 0; i < board.length; i++) {
             for (int j = 0; j < board[i].length; j ++) {
@@ -28,36 +29,44 @@ public class App {
 
         Action setNorth = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println("UP arrow key was pressed");
-                if (player.getDirection() != Snake.NORTH && player.getDirection() != Snake.SOUTH) {
-                    player.addTurnPoint();
+                if (player.getDirection() != Snake.NORTH && player.getDirection() != Snake.SOUTH && turnPointAdded) {
+                    turnPoint.setX(player.getHead().getX());
+                    turnPoint.setY(player.getHead().getY());
+                    turnPoint.setDirection(player.getDirection());
+                    turnPointAdded = false;
                     player.setDirection(Snake.NORTH);
                 }
             } 
         };
         Action setEast = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println("RIGHT arrow key was pressed");
-                if (player.getDirection() != Snake.EAST && player.getDirection() != Snake.WEST) {
-                    player.addTurnPoint();
+                if (player.getDirection() != Snake.EAST && player.getDirection() != Snake.WEST && turnPointAdded) {
+                    turnPoint.setX(player.getHead().getX());
+                    turnPoint.setY(player.getHead().getY());
+                    turnPoint.setDirection(player.getDirection());
+                    turnPointAdded = false;
                     player.setDirection(Snake.EAST);
                 }
             } 
         };
         Action setSouth = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println("DOWN arrow key was pressed");
-                if (player.getDirection() != Snake.NORTH && player.getDirection() != Snake.SOUTH) {
-                    player.addTurnPoint();
+                if (player.getDirection() != Snake.NORTH && player.getDirection() != Snake.SOUTH && turnPointAdded) {
+                    turnPoint.setX(player.getHead().getX());
+                    turnPoint.setY(player.getHead().getY());
+                    turnPoint.setDirection(player.getDirection());
+                    turnPointAdded = false;
                     player.setDirection(Snake.SOUTH);
                 }
             } 
         };
         Action setWest = new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                System.out.println("LEFT arrow key was pressed");
-                if (player.getDirection() != Snake.EAST && player.getDirection() != Snake.WEST) {
-                    player.addTurnPoint();
+                if (player.getDirection() != Snake.EAST && player.getDirection() != Snake.WEST && turnPointAdded) {
+                    turnPoint.setX(player.getHead().getX());
+                    turnPoint.setY(player.getHead().getY());
+                    turnPoint.setDirection(player.getDirection());
+                    turnPointAdded = false;
                     player.setDirection(Snake.WEST);
                 }
             } 
@@ -91,7 +100,11 @@ public class App {
         long end = 0L;
         while (!exit) {    
             start = System.nanoTime();
-            if ((start - end) / 1000000 > 400) {
+            if ((start - end) / 1000000 > 200) {
+                if (!turnPointAdded) {
+                    player.addTurnPoint(new Point(turnPoint.getX(), turnPoint.getY()), turnPoint.getDirection());
+                    turnPointAdded = true;
+                }
                 System.out.println("------------------------------------");
                 if (spawnFood) {
                     xcoord = rnd.nextInt(BOARD_SIZE);
@@ -107,12 +120,7 @@ public class App {
                     }
                 }
 
-                if (player.getHead().getX() - 1 >= 0 &&
-                    player.getHead().getX() + 1 < board.length &&
-                    player.getHead().getY() - 1 >= 0 &&
-                    player.getHead().getY() + 1 < board[0].length &&
-                    !player.willBiteBody()
-                    ) {
+                if (!player.willBiteBoard() && !player.willBiteBody()) {
                     spawnFood = player.shiftHead();
                 }
                 else {
