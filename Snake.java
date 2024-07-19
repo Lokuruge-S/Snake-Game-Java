@@ -1,4 +1,8 @@
 import java.util.ArrayList;
+import java.util.HashSet;
+
+import javax.swing.JComponent;
+import javax.swing.JPanel;
 
 public class Snake {
     public static final int NORTH = 0;
@@ -6,43 +10,27 @@ public class Snake {
     public static final int SOUTH = 2;
     public static final int WEST = 3;
 
-    private String[][] board;
-    private int direction;
+    private int boardX;
+    private int boardY;
+    private JPanel boardPanel;
+    private int squareSize;
+
     private Point head;
+    private int direction;
     private int length;
     private Point food;
-    private ArrayList<Point> turnPoints = new ArrayList<Point>();
-    private ArrayList<Integer> turnDirections = new ArrayList<Integer>();
-    private boolean snakeMade;
+
+    private ArrayList<TurningPoint> turnPoints = new ArrayList<TurningPoint>();
+    private ArrayList<SnakeSeg> snake = new ArrayList<SnakeSeg>();
     private boolean bitesBody = false;
     private boolean bitesBoard = false;
 
-    public Snake (String[][] board, Point head, int direction, int length) {
-        this.board = board;
-        this.head = head;
-
-        switch (direction) {
-            case Snake.NORTH: 
-                this.direction = direction;
-                break;
-            
-            case Snake.EAST:
-                this.direction = direction;
-                break;
-
-            case Snake.SOUTH:
-                this.direction = direction;
-                break;
-
-            case Snake.WEST:
-                this.direction = direction;
-                break;
-            
-            default:
-                this.direction = Snake.NORTH;
-        }
-
-        this.length = length;
+    public Snake (int boardX, int boardY, JPanel boardPanel, int squareSize) {
+        //initialize the board parameter
+        this.boardX = boardX;
+        this.boardY = boardY;
+        this.boardPanel = boardPanel;
+        this.squareSize = squareSize;
     }
 
     public void setHead (Point head) {
@@ -54,25 +42,11 @@ public class Snake {
     }
 
     public void setDirection (int direction) {
-        switch (direction) {
-            case Snake.NORTH: 
-                this.direction = direction;
-                break;
-            
-            case Snake.EAST:
-                this.direction = direction;
-                break;
-
-            case Snake.SOUTH:
-                this.direction = direction;
-                break;
-
-            case Snake.WEST:
-                this.direction = direction;
-                break;
-            
-            default:
-                this.direction = Snake.NORTH;
+        if (direction >= Snake.NORTH && direction <= Snake.WEST) {
+            this.direction = direction;
+        }
+        else {
+            this.direction = Snake.NORTH;
         }
     }
 
@@ -82,66 +56,91 @@ public class Snake {
 
     public void setLength(int length) {
         this.length = length;
+
+        //clear any existing components
+        for (SnakeSeg seg : snake) {
+            this.boardPanel.remove(seg);
+        }
+        snake.clear();
+
+        //add the starting componenets to the board
+        SnakeHead snakeHead = new SnakeHead();
+        snakeHead.setSize(squareSize, squareSize);
+        snake.add(snakeHead);
+        this.boardPanel.add(snakeHead);
+        for (int i = 1; i < this.length; i++) {
+            SnakeBody seg = new SnakeBody();
+            seg.setSize(squareSize, squareSize);
+            snake.add(seg);
+            this.boardPanel.add(seg);
+        }
     }
 
     public int getLength() {
         return this.length;
     }
 
-    public void grow() {
+    private void grow() {
         this.length++;
+        SnakeBody seg = new SnakeBody();
+            seg.setSize(squareSize, squareSize);
+            seg.setVisible(false);
+            snake.add(seg);
+            this.boardPanel.add(seg);
     }
 
     public void setFood(Point food) {
         this.food = food;
     }
 
-    public String[][] makeSnake() {
-        switch (direction) {
-            case Snake.NORTH:
-                board[head.getY()][head.getX()] = " ^ ";
-                break;
-            
-            case Snake.EAST:
-                board[head.getY()][head.getX()] = " > ";
-                break;
-
-            case Snake.SOUTH:
-                board[head.getY()][head.getX()] = " v ";
-                break;
-
-            case Snake.WEST:
-                board[head.getY()][head.getX()] = " < ";
-                break;
-        }
-
-        snakeMade = false;
-        bitesBody = false;
-        bendSnake(head, direction, 1);
-
-        return this.board;
-    }
-
     public boolean shiftHead() {
+        int x;
+        int y;
+
         switch (direction) {
             case Snake.NORTH:
-                head.setY(head.getY() - 1);
+                y = head.getY() - 1;
+                if (y < 0) {
+                    this.bitesBoard = true;
+                }
+                else {
+                    head.setY(y);
+                }
                 break;
             
             case Snake.EAST:
-                head.setX(head.getX() + 1);
+                x = head.getX() + 1;
+                if (x >= boardX) {
+                    this.bitesBoard = true;
+                }
+                else {
+                    head.setX(x);
+                }
                 break;
 
             case Snake.SOUTH:
-                head.setY(head.getY() + 1);
+                y = head.getY() + 1;
+                if (y >= boardY) {
+                    this.bitesBoard = true;
+                }
+                else {
+                    head.setY(y);
+                }
                 break;
 
             case Snake.WEST:
-                head.setX(head.getX() - 1);
+                x = head.getX() - 1;
+                if (x < 0) {
+                    this.bitesBoard = true;
+                } 
+                else {
+                    head.setX(x);
+                }
                 break;
         }
 
         if (head.equals(food)) {
+            grow();
             return true;
         }
         else {
@@ -150,103 +149,60 @@ public class Snake {
     }
 
     public void addTurnPoint(Point head, int turnDir) {
-        turnPoints.add(new Point(head.getX(), head.getY()));
-        turnDirections.add(turnDir);
+        turnPoints.add(new TurningPoint(head.getX(), head.getY(), turnDir));
     }
 
-    private void bendSnake(Point currentSeg, int currentDir, int segIndex) {
-        Point preceedingSeg = new Point(0, 0);
-        boolean validPoint;
+    public HashSet<Point> makeSnake() {
+        HashSet<Point> snakePoints = new HashSet<Point>();
 
-        switch (currentDir) {
-            case Snake.NORTH:
-                preceedingSeg.setX(currentSeg.getX());
-                preceedingSeg.setY(currentSeg.getY() + 1);
-                break;
-        
-            case Snake.EAST:
-                preceedingSeg.setX(currentSeg.getX() - 1);
-                preceedingSeg.setY(currentSeg.getY());
-                break;
+        boolean firstSeg = true;
+        Point segPoint = new Point(head.getX(), head.getY());
+        int currentDir = direction;
+        int i = turnPoints.size() - 1;
 
-            case Snake.SOUTH:
-                preceedingSeg.setX(currentSeg.getX());
-                preceedingSeg.setY(currentSeg.getY() - 1);
-                break;
+        for (SnakeSeg seg : snake) {
+            if (firstSeg) {
+                seg.setDirection(currentDir);
+                seg.pos = segPoint;
+                firstSeg = false;
+            } else {
+                switch (currentDir) {
+                    case Snake.NORTH:
+                        segPoint = new Point(segPoint.getX(), segPoint.getY() + 1);
+                        break;
+                
+                    case Snake.EAST:
+                        segPoint = new Point(segPoint.getX() - 1, segPoint.getY());
+                        break;
 
-            case Snake.WEST:
-                preceedingSeg.setX(currentSeg.getX() + 1);
-                preceedingSeg.setY(currentSeg.getY());
-                break;
-        }
+                    case Snake.SOUTH:
+                        segPoint = new Point(segPoint.getX(), segPoint.getY() - 1);
+                        break;
 
-        if (preceedingSeg.getX() >= 0 &&
-            preceedingSeg.getX() < board.length &&
-            preceedingSeg.getY() >= 0 &&
-            preceedingSeg.getY() < board[0].length) {
-            
-            validPoint = true;
-        }
-        else {
-            validPoint = false;
-        }
+                    case Snake.WEST:
+                        segPoint = new Point(segPoint.getX() + 1, segPoint.getY());
+                        break;
+                }
+                seg.pos = segPoint;
 
-        if (segIndex < length && validPoint && !snakeMade) {
-            board[preceedingSeg.getY()][preceedingSeg.getX()] = " o ";
-            if (preceedingSeg.equals(futureHead())) {
-                bitesBody = true;
-            }
+                if (i >= 0 && segPoint.equals(turnPoints.get(i))) {
+                    currentDir = turnPoints.get(i).getDirection();
+                    i--;
+                }
 
-            int i;
-            for (i = turnPoints.size() - 1; i >= 0; i--) {
-                if (preceedingSeg.equals(turnPoints.get(i))) {
-                    break;
+                if (segPoint.equals(head)) {
+                    bitesBody = true;
                 }
             }
-
-            if (i >= 0 && preceedingSeg.equals(turnPoints.get(i))) {
-                bendSnake(preceedingSeg, turnDirections.get(i), segIndex + 1);
-            }
-            else {
-                bendSnake(preceedingSeg, currentDir, segIndex + 1);
-            }
-        }
-        else if (segIndex >= length && validPoint && !snakeMade) {
-            board[preceedingSeg.getY()][preceedingSeg.getX()] = " _ ";
-            if (turnPoints.size() > 0 && preceedingSeg.equals(turnPoints.get(0))) {
-                turnPoints.remove(0);
-                turnDirections.remove(0);
-            }
-            snakeMade = true;
-        }
-    }
-
-    private Point futureHead() {
-        Point futureHead = new Point(0, 0);
-
-        switch (direction) {
-            case Snake.NORTH:
-                futureHead.setY(head.getY() - 1);
-                futureHead.setX(head.getX());
-                break;
             
-            case Snake.EAST:
-                futureHead.setY(head.getY());
-                futureHead.setX(head.getX() + 1);
-                break;
-
-            case Snake.SOUTH:
-                futureHead.setY(head.getY() + 1);
-                futureHead.setX(head.getX());
-                break;
-
-            case Snake.WEST:
-                futureHead.setY(head.getY());
-                futureHead.setX(head.getX() - 1);
-                break;
+            snakePoints.add(segPoint);
         }
 
-        return futureHead;
+        if (i >= 0) {
+             turnPoints.remove(0);
+        }
+
+        return snakePoints;
     }
 
     public boolean willBiteBody() {
@@ -254,34 +210,18 @@ public class Snake {
     }
 
     public boolean willBiteBoard() {
-        bitesBoard = false;
-
-        switch (direction) {
-            case Snake.NORTH:
-                if ((head.getY() - 1) < 0) {
-                    bitesBoard = true;
-                };
-                break;
-            
-            case Snake.EAST:
-                if ((head.getX() + 1) >= board[0].length) {
-                    bitesBoard = true;
-                };
-                break;
-
-            case Snake.SOUTH:
-                if ((head.getY() + 1) >= board.length) {
-                    bitesBoard = true;
-                };
-                break;
-
-            case Snake.WEST:
-                if ((head.getX() - 1) < 0) {
-                    bitesBoard = true;
-                }
-                break;
-        }
-
         return this.bitesBoard;
+    }
+
+    public void resetBiteBools() {
+        this.bitesBody = false;
+        this.bitesBoard = false;
+    }
+
+    public void renderTo(JComponent panel, int panelBorderWidth) {
+        for (SnakeSeg seg : snake) {
+            seg.setLocation(seg.pos.getX() * squareSize + panelBorderWidth, seg.pos.getY() * squareSize + panelBorderWidth);
+            seg.setVisible(true);
+        }
     }
 }
