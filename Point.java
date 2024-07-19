@@ -36,4 +36,14 @@ public class Point {
             return false;
         }
     }
+
+    @Override
+    public int hashCode() {
+        return 19 * this.getX() + this.getY();
+    }
+
+    @Override
+    public String toString() {
+        return ("(" + xcoord + ", " + ycoord + ")");
+    }
 }
